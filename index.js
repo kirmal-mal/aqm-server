@@ -31,17 +31,18 @@ express()
   })
   .post('/envdata', async (req, res) => {
     var post_body = req.body;
+    console.log("Im in POST");
     res.send(post_body);
-    // try {
+    try {
       
-    //   var queryString = `INSERT INTO env_logs(data) VALUES()`;
-    //   const client = await pool.connect();
-    //   const result = await client.query(queryString);
-    //   client.release();
-    // } catch (err) {
-    //   console.error(err);
-    //   res.send("Error " + err);
-    // }
+      var queryString = `INSERT INTO env_logs(data) VALUES(${post_body.data})`;
+      const client = await pool.connect();
+      const result = await client.query(queryString);
+      client.release();
+    } catch (err) {
+      console.error(err);
+      res.send("Error " + err);
+    }
   })
   .get('/times', (req, res) => res.send(showTimes()))
   .listen(PORT, () => console.log(`Listening on ${ PORT }`));
