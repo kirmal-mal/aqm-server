@@ -11,18 +11,17 @@ const pool = new Pool({
 });
 
 express()
-  .use(express.static(path.join(__dirname, 'public')))
   .use(bodyParser.json())
   .use(bodyParser.urlencoded({ extended: true }))
   .set('views', path.join(__dirname, 'views'))
   .set('view engine', 'ejs')
   .get('/', (req, res) => res.render('pages/index'))
-  .get('/envdata', async (req, res) => {
+  .get('/test_logs', async (req, res) => {
     try {
       const client = await pool.connect();
       const result = await client.query('SELECT * FROM env_logs');
       const results = { 'results': (result) ? result.rows : null};
-      res.render('pages/db', results );
+      res.render('pages/test_logs.ejs', results );
       client.release();
     } catch (err) {
       console.error(err);
@@ -41,17 +40,7 @@ express()
       console.error(err);
       res.send("Error " + err);
     }
-    res.send(post_body + ' inserted\n');
+    res.send(post_body.data + ' inserted\n');
   })
-  .get('/times', (req, res) => res.send(showTimes()))
   .listen(PORT, () => console.log(`Listening on ${ PORT }`));
-
-showTimes = () => {
-  let result = '';
-  const times = process.env.TIMES || 5;
-  for (i = 0; i < times; i++) {
-    result += i + ' ';
-  }
-  return result;
-}
 

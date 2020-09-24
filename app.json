@@ -1,8 +1,7 @@
 {
-  "name": "Start on Heroku: Node.js",
-  "description": "A barebones Node.js app using Express 4",
-  "repository": "https://github.com/heroku/node-js-getting-started",
-  "logo": "https://cdn.rawgit.com/heroku/node-js-getting-started/main/public/node.svg",
+  "name": "SD logs nodejs server",
+  "description": "A node js server to store data from enviroment sensors",
+  "repository": "https://git.heroku.com/sd-env-logs-server.git",
   "keywords": ["node", "express", "heroku"],
   "image": "heroku/nodejs"
 }
