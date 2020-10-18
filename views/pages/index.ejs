@@ -5,5 +5,21 @@
   </head>
   <body>
     Nothing here. Go to <a href="./test_logs">Logs</a>
+    <form method="POST" action="/createUser">
+      <div>Username: <input type="text" name="username" id="username" /></div>
+      <div>Email: <input type="text" name="email" id="email" /></div>
+      <div>Password: <input type="password" name="passw" id="passw" /></div>
+      <div>Confirm password: <input type="password" name="confpassw" id="confpassw" /></div>
+      <input type="submit" value="Create new account">
+  </form>
+  <h2>Log in into my Devices</h2>
+  <form method="GET" action="/auth">
+    <input type="submit" value="My devices">
+  </form>
+  <form method="POST" action="/auth">
+    <div>Username: <input type="text" name="username" id="username" /></div>
+    <div>Password: <input type="password" name="passw" id="passw" /></div>
+    <input type="submit" value="Log in">
+  </form>
   </body>
 </html>

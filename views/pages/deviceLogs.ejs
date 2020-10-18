@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <% include ../partials/header.ejs %>
+</head>
+
+<body>
+  <a href="/mydevices">Go back</a>
+  <h2>Logs</h2>
+  <ul>
+    <% logs.forEach(function(r) { %>
+    <li><%= r.date_taken %> - <%= r.tvoc %> - <%= r.eco2 %> - <%= r.raw_h2 %> - <%= r.raw_ethanol %></li>
+    <% }); %>
+  </ul>
+</body>
+
+</html>
