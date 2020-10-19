@@ -316,6 +316,7 @@ app.get('/viewlogs', async (req, res) => {
   const results = { logs: result.rows};
   res.render('pages/deviceLogs.ejs', results);
 });
+
 app.post('/logout', async (req, res) => {
   res.clearCookie('token');
   res.redirect('/');
