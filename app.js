@@ -4,6 +4,8 @@ const path = require('path')
 const bcryptjs = require('bcryptjs');
 const saltRounds = 10;
 
+var otpGenerator = require('otp-generator')
+
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 
@@ -183,7 +185,6 @@ app.post('/auth', async (req, res) => {
 app.post('/pair', async (req, res) => {
   var post_body = req.body;
   //{ "type" : "pair", "token": 321456, "model": "model_name", "serial": "serial111"}
-  //insert into device(model, serial, token, user_id) values ('model2', 'SERIAL#!', 'q43624361', 3);
   // console.log(post_body);
   if (post_body) {
     if (post_body.type == "pair") {
@@ -199,9 +200,11 @@ app.post('/pair', async (req, res) => {
           var selectDeviceString = `SELECT model, serial, token FROM device WHERE user_id = ${user_id} AND model = \'${post_body.model}\' AND serial = \'${post_body.serial}\'`;
           // console.log(selectDeviceString)
           var resultDevice = await client.query(selectDeviceString);
-          console.log(resultDevice);
+          // console.log(resultDevice);
           if (resultDevice.rowCount == 0) {
             var addDeviceString = `INSERT INTO device(model, serial, user_id) values (\'${post_body.model}\', \'${post_body.serial}\', ${user_id}) RETURNING id`;
+            var deleteTokenString = `DELETE from FROM secret_tokens WHERE token = ${post_body.token}`;
+            await client.query(deleteTokenString);
             console.log(addDeviceString);
             resultDevice = await client.query(addDeviceString);
             const device_id = resultDevice.rows[0].id;
@@ -214,7 +217,7 @@ app.post('/pair', async (req, res) => {
             res.status(201).json({ token: newToken });
           } else {
             console.log("Already in DB");
-            console.log(resultDevice);
+            // console.log(resultDevice);
             res.status(418).json({ token: resultDevice.rows[0].token });
           }
         } else {
@@ -270,10 +273,9 @@ app.get('/mydevices', async (req, res) => {
 
   const client = await pool.connect();
   //TODO: add token generator
-  const devToken = 321456;
+  var devToken;
   var tokenString = "------"
   if (addDevice == "true") {
-    tokenString = `${devToken}`;
     var selectTokenString = `SELECT token, user_id FROM secret_tokens WHERE user_id = \'${id}\'`;
     // console.log(selectTokenString);
     //var queryString = `INSERT INTO env_logs(env_data) VALUES(\'${post_body.data}\')`;
@@ -282,15 +284,21 @@ app.get('/mydevices', async (req, res) => {
     var result = await client.query(selectTokenString);
     // console.log(result);
     if (result.rowCount == 0) {
+      devToken = otpGenerator.generate(6, { upperCase: false, specialChars: false, digits: true, alphabets: false });
       var addTokenString = `INSERT INTO secret_tokens(token, user_id) VALUES(${devToken},\'${id}\')`;
       result = await client.query(addTokenString);
       // console.log(result);
+    } else {
+      devToken = result.rows[0].token;
+      // console.log(result);
+      console.log(devToken);
     }
     client.release();
+    tokenString = `${devToken}`;
   }
   var selectDevicesString = `SELECT id, model, serial, date_connected FROM device WHERE user_id = ${id}`;
   result = await client.query(selectDevicesString);
-  console.log(result);
+  // console.log(result);
   const results = { devices: result.rows, token: tokenString };
   res.render('pages/myDevices.ejs', results);
 });
