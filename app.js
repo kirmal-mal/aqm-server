@@ -204,7 +204,7 @@ app.post('/pair', async (req, res) => {
           // console.log(resultDevice);
           if (resultDevice.rowCount == 0) {
             var addDeviceString = `INSERT INTO device(model, serial, user_id) values (\'${post_body.model}\', \'${post_body.serial}\', ${user_id}) RETURNING id`;
-            var deleteTokenString = `DELETE from FROM secret_tokens WHERE token = ${post_body.token}`;
+            var deleteTokenString = `DELETE FROM secret_tokens WHERE token = ${post_body.token}`;
             console.log("Device is not found. Deliting a token from db:\n" + deleteTokenString);
             await client.query(deleteTokenString);
             console.log("Adding a device to db:\n" + addDeviceString);
