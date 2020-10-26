@@ -8,11 +8,31 @@
 <div class="container">
 <h2>Database Results</h2>
 
-<ul>
+<table border="1">
+  <caption>Table Caption</caption>
+  <thead>
+    <tr>
+     <th>ID</th>
+     <th>Date</th>
+     <th>Environment Data</th>
+    </tr>
+  </thead>
+  <tbody>
     <% results.forEach(function(r) { %>
-        <li><%= r.id %> - <%= r.date %> - <%= r.env_data %></li>
+      <tr>
+        <td><%= r.id %></td> 
+        <td><%= r.date %></td> 
+        <td><%= r.env_data %></td>
+      </tr>
     <% }); %>
-</ul>
+    <tr><!-- First row -->
+      <td>Table Cell</td>
+      <td colspan="2">Table Cell</td>
+      <!-- <td>Table Cell</td> -->
+    </tr>
+  </tbody>
+</table>
+
 
 </div>
 
