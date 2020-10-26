@@ -52,7 +52,7 @@ app.get('/test_table', async (req, res) => {
     const client = await pool.connect();
     const result = await client.query('SELECT * FROM env_logs');
     const results = { 'results': (result) ? result.rows : null };
-    res.render('pages/test_logs.ejs', results);
+    res.render('pages/test_table.ejs', results);
     client.release();
   } catch (err) {
     console.error(err);
