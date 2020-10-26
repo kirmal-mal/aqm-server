@@ -185,35 +185,37 @@ app.post('/auth', async (req, res) => {
 app.post('/pair', async (req, res) => {
   var post_body = req.body;
   //{ "type" : "pair", "token": 321456, "model": "model_name", "serial": "serial111"}
-  // console.log(post_body);
+  console.log("Pairing request: " + post_body);
   if (post_body) {
     if (post_body.type == "pair") {
       try {
         //TODO Prepared statements
         var selectUserString = `SELECT user_id, token FROM secret_tokens WHERE token = ${post_body.token}`;
-        console.log(selectUserString)
+        console.log("Checking if token is correct for this user? :\n" + selectUserString)
         const client = await pool.connect();
         var resultToken = await client.query(selectUserString);
         // console.log(resultToken);
         if (resultToken.rowCount == 1) {
           const user_id = resultToken.rows[0].user_id;
+          console.log("Token is correct. Checking if device is already paired.\n")
           var selectDeviceString = `SELECT model, serial, token FROM device WHERE user_id = ${user_id} AND model = \'${post_body.model}\' AND serial = \'${post_body.serial}\'`;
-          // console.log(selectDeviceString)
+          console.log(selectDeviceString)
           var resultDevice = await client.query(selectDeviceString);
           // console.log(resultDevice);
           if (resultDevice.rowCount == 0) {
             var addDeviceString = `INSERT INTO device(model, serial, user_id) values (\'${post_body.model}\', \'${post_body.serial}\', ${user_id}) RETURNING id`;
             var deleteTokenString = `DELETE from FROM secret_tokens WHERE token = ${post_body.token}`;
+            console.log("Device is not found. Deliting a token from db:\n" + deleteTokenString);
             await client.query(deleteTokenString);
-            console.log(addDeviceString);
+            console.log("Adding a device to db:\n" + addDeviceString);
             resultDevice = await client.query(addDeviceString);
             const device_id = resultDevice.rows[0].id;
-            console.log(device_id);
+            console.log("Recieved new device_id: " + device_id);
             //TODO: Add unique hash to the token (otherwise device can change it's id)
             const newToken = jwt.sign({ device_id: device_id }, jswSecret);
             var updateTokenString = `UPDATE device SET token = \'${newToken}\' WHERE id = ${device_id}`;
             await client.query(updateTokenString);
-            console.log(updateTokenString);
+            console.log("Creating a new authorisation token for this device:" + updateTokenString);
             res.status(201).json({ token: newToken });
           } else {
             console.log("Already in DB");
