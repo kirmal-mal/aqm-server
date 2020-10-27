@@ -23,6 +23,18 @@ const pool = new Pool({
 const jwt = require('jsonwebtoken');
 const jswSecret = "sdDev";
 
+async function getLogs(device_id) {
+  const client = await pool.connect();
+  var selectLogsString = `SELECT date_taken, tvoc, eco2, raw_h2, raw_ethanol FROM device_datalogs WHERE device_id = $1`;
+  // console.log(se);
+
+  var result = await client.query(selectLogsString, [device_id]);
+  // console.log(result);
+  client.release();
+  const results = { logs: result.rows };
+  // console.log(results);
+  return results;
+}
 
 const app = express();
 
@@ -337,16 +349,16 @@ app.get('/mydevices', async (req, res) => {
 
 app.get('/viewlogs', async (req, res) => {
   const device_id = req.query.device_id;
-
-  const client = await pool.connect();
-  var selectLogsString = `SELECT date_taken, tvoc, eco2, raw_h2, raw_ethanol FROM device_datalogs WHERE device_id = $1`;
-  // console.log(se);
-
-  var result = await client.query(selectLogsString, [device_id]);
-  // console.log(result);
-  client.release();
-  const results = { logs: result.rows };
+  const results = await getLogs(device_id);
+  console.log(results);
   res.render('pages/deviceLogs.ejs', results);
+});
+
+app.get('/getlogs', async (req, res) => {
+  const device_id = req.query.device_id;
+  console.log(JSON.stringify(req.query));
+  const results = await getLogs(device_id);
+  res.send(results);
 });
 
 app.post('/logout', async (req, res) => {
