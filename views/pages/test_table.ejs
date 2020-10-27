@@ -41,7 +41,9 @@
     }
     
     function updateData() {
-        $.getJSON("https://sd-env-logs-server.herokuapp.com/getlogs?device_id=11", addData);
+        const urlParams = new URLSearchParams(windwo.location.search);
+        const currentDeviceID = urlParams.get('device_id');
+        $.getJSON(`https://sd-env-logs-server.herokuapp.com/getlogs?device_id=${currentDeviceID}`, addData);
     }
     
     }

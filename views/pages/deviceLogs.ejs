@@ -2,17 +2,84 @@
 <html>
 
 <head>
-  <% include ../partials/header.ejs %>
+  <script>
+    window.onload = function () {
+
+      var dataPoints = { tvoc: [], eoc2: [], raw_h2: [], raw_ethanol: [] }
+
+      var chart = new CanvasJS.Chart("chartContainer", {
+        theme: "light2",
+        title: {
+          text: "Live Data"
+        },
+        axisY: {
+          minimum: 0,
+          maximum: 10000
+        },
+        data: [{
+          type: "line",
+          dataPoints: dataPoints.tvoc
+        },
+        {
+          type: "line",
+          dataPoints: dataPoints.eoc2
+        },
+        {
+          type: "line",
+          dataPoints: dataPoints.raw_h2
+        },
+        {
+          type: "line",
+          dataPoints: dataPoints.raw_ethanol
+        }
+        ]
+      });
+      updateData();
+
+      // Initial Values
+      var xValue = 0;
+      var yValue = 10;
+      var newDataCount = 6;
+
+      function addData(data) {
+        //dataPoints.shift();
+        dataPoints.tvoc.push({ x: xValue, y: data.logs[0].tvoc });
+        dataPoints.eoc2.push({ x: xValue, y: data.logs[0].eoc2 });
+        dataPoints.raw_h2.push({ x: xValue, y: data.logs[0].raw_h2 });
+        dataPoints.raw_ethanol.push({ x: xValue, y: data.logs[0].raw_ethanol });
+        console.log(dataPoints);
+        xValue++;
+        //yValue = data.logs[0].tvoc;
+
+        newDataCount = 1;
+        chart.render();
+        setTimeout(updateData, 1500);
+      }
+
+      function updateData() {
+        const urlParams = new URLSearchParams(windwo.location.search);
+        const currentDeviceID = urlParams.get('device_id');
+        $.getJSON(`https://sd-env-logs-server.herokuapp.com/getlogs?device_id=${currentDeviceID}`, addData);
+      }
+
+    }
+  </script>
 </head>
 
 <body>
-  <a href="/mydevices">Go back</a>
-  <h2>Logs</h2>
-  <ul>
-    <% logs.forEach(function(r) { %>
-    <li><%= r.date_taken %> - <%= r.tvoc %> - <%= r.eco2 %> - <%= r.raw_h2 %> - <%= r.raw_ethanol %></li>
-    <% }); %>
-  </ul>
-</body>
+  <div id="chartContainer" style="height: 300px; width: 100%;"></div>
+  <script src="https://canvasjs.com/assets/script/jquery-1.11.1.min.js"></script>
+  <script src="https://canvasjs.com/assets/script/jquery.canvasjs.min.js"></script>
+  </head>
+
+  <body>
+    <a href="/mydevices">Go back</a>
+    <h2>Logs</h2>
+    <ul>
+      <% logs.forEach(function(r) { %>
+      <li><%= r.date_taken %> - <%= r.tvoc %> - <%= r.eco2 %> - <%= r.raw_h2 %> - <%= r.raw_ethanol %></li>
+      <% }); %>
+    </ul>
+  </body>
 
 </html>
