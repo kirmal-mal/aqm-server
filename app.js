@@ -48,14 +48,14 @@ app.get('/test_logs', async (req, res) => {
 });
 
 app.post('/envdata', async (req, res) => {
-  var post_body = req.body;
+  const post_body = req.body;
   if (post_body)
     try {
       //TODO Prepared statements
-      var queryString = `INSERT INTO env_logs(env_data) VALUES(\'${post_body.data}\')`;
+      var queryString = 'INSERT INTO env_logs(env_data) VALUES($1)';
       console.log(queryString);
       const client = await pool.connect();
-      const result = await client.query(queryString);
+      const result = await client.query(queryString, [post_body.data]);
       client.release();
     } catch (err) {
       console.error(err);
@@ -66,56 +66,69 @@ app.post('/envdata', async (req, res) => {
 
 app.post('/postlogs', async (req, res) => {
   //{ token = "token", }
-  var post_body = req.body;
-  console.log(post_body);
-  if (post_body) {
-    if (post_body.type == "postlogs") {
-      const token = post_body.token;
-      try {
-        const client = await pool.connect();
-        const device_id = jwt.verify(token, jswSecret).device_id;
-        console.log(device_id);
-        var checkDeviceString = `SELECT id, token FROM device WHERE id = ${device_id}`;
-        // console.log(checkDeviceString);
-        var result = await client.query(checkDeviceString);
-        // console.log(result);
-        if (result.rowCount == 0) {
-          res.status(401).send("Device is not paired.")
-        } else {
-          if (result.rows[0].token == token) {
-            var addLogsString = `INSERT INTO device_datalogs(device_id, tvoc, eco2, raw_h2, raw_ethanol) VALUES (${device_id}, ${post_body.tvoc}, ${post_body.eco2}, ${post_body.raw_h2}, ${post_body.raw_ethanol})`;
-            result = await client.query(addLogsString);
-            res.status(201).send("Log succesfully inserted");
+  const post_body = req.body;
+  const max_int = 2147483647;
+  const min_int = -2147483648;
+  const tvoc = parseInt(post_body.tvoc);
+  const eco2 = parseInt(post_body.eco2);
+  const raw_h2 = parseInt(post_body.raw_h2);
+  const raw_ethanol = parseInt(post_body.raw_ethanol);
+  console.log(`Logs with tvoc: ${tvoc}, eco2: ${eco2}, raw_h2: ${raw_h2}, raw_ethanol: ${raw_ethanol}.`)
+  if (isNaN(tvoc) || isNaN(eco2) || isNaN(raw_h2) || isNaN(raw_ethanol) 
+    || min_int > tvoc || tvoc > max_int || min_int > eco2 || eco2 > max_int || min_int > raw_h2 || raw_h2 > max_int || min_int > raw_ethanol || raw_ethanol > max_int) {
+    res.status(400).send("Wrong input")
+  } else {
+    console.log(JSON.stringify(post_body));
+    if (post_body) {
+      if (post_body.type == "postlogs") {
+        const token = post_body.token;
+        try {
+          const client = await pool.connect();
+          const device_id = jwt.verify(token, jswSecret).device_id;
+          var checkDeviceString = `SELECT id, token FROM device WHERE id = ${device_id}`;
+          var result = await client.query(checkDeviceString);
+          if (result.rowCount == 0) {
+            res.status(401).send("Device is not paired.")
           } else {
-            res.status(401).send("Device has wrong token.")
+            if (result.rows[0].token == token) {
+              console.log("Token verified. Device id is: " + device_id);
+              var addLogsString = "INSERT INTO device_datalogs(device_id, tvoc, eco2, raw_h2, raw_ethanol) VALUES ($1, $2, $3, $4, $5)";
+              console.log(addLogsString);
+              result = await client.query(addLogsString, [device_id, tvoc, eco2, raw_h2, raw_ethanol]);
+              console.log(`Logs with tvoc: ${tvoc}, eco2: ${eco2}, raw_h2: ${raw_h2}, raw_ethanol: ${raw_ethanol} inserted.`)
+              res.status(201).send("Log succesfully inserted");
+            } else {
+              res.status(401).send("Device has wrong token.")
+            }
           }
+
+          client.release();
+        } catch {
+          console.log(err);
+          res.status(401).send("Invalid token");
         }
 
-        client.release();
-      } catch {
-        res.status(401).send("Invalid token");
+      } else {
+        res.status(400).send("Wrond \"type\" field");
       }
-
     } else {
-      res.status(400).send("Wrond \"type\" field");
+      res.status(400).send("Empty body.");
     }
-  } else {
-    res.status(400).send("Empty body.");
   }
 });
 
 app.post('/createUser', async (req, res) => {
-  var post_body = req.body;
-  if (post_body)
+  const post_body = req.body;
+  if (post_body && ("username" in post_body) && ("email" in post_body) && ("passw" in post_body) && ("confpassw" in post_body)
+    && post_body.username && post_body.email && post_body.passw && post_body.confpassw) {
     try {
       //TODO Prepared statements
-      // console.log(post_body);
-      var selectUserString = `SELECT username, email FROM users WHERE username = \'${post_body.username}\' OR email = \'${post_body.email}\'`;
+      console.log("Trying to create new user:\n" + JSON.stringify(post_body));
+      var selectUserString = 'SELECT username, email FROM users WHERE username = $1 OR email = $2';
       console.log(selectUserString)
-      //var queryString = `INSERT INTO env_logs(env_data) VALUES(\'${post_body.data}\')`;
       // console.log(queryString);
       const client = await pool.connect();
-      var result = await client.query(selectUserString);
+      var result = await client.query(selectUserString, [post_body.username, post_body.email]);
       // console.log(result);
       if (result.rowCount > 0) {
         console.log("User with this email or password already exists");
@@ -124,9 +137,10 @@ app.post('/createUser', async (req, res) => {
         if (post_body.passw == post_body.confpassw) {
           const plain_passw = post_body.passw;
           const pass_hash = await bcryptjs.hash(plain_passw, saltRounds);
-          var createUserString = `INSERT INTO users(username, password_hash, email) VALUES (\'${post_body.username}\', \'${pass_hash}\', \'${post_body.email}\');`;
+          console.log("Creating new user:");
+          var createUserString = `INSERT INTO users(username, password_hash, email) VALUES ($1, $2, $3);`;
           console.log(createUserString);
-          result = await client.query(createUserString);
+          result = await client.query(createUserString, [post_body.username, pass_hash, post_body.email]);
           if (result.rowCount == 1) {
             console.log(`User ${post_body.username} succesfully created.`);
             res.send(`User ${post_body.username} succesfully created.`);
@@ -141,30 +155,31 @@ app.post('/createUser', async (req, res) => {
       console.error(err);
       res.send("Error " + err);
     }
+  } else {
+    res.status(400).send("Wrong request");
+  }
 });
 
 app.post('/auth', async (req, res) => {
-  var post_body = req.body;
-  if (post_body)
+  const post_body = req.body;
+  if (post_body && post_body.username && post_body.passw) {
     try {
       //TODO Prepared statements
-      console.log(post_body);
-      var selectUserString = `SELECT id, username, password_hash FROM users WHERE username = \'${post_body.username}\'`;
-      console.log(selectUserString)
-      //var queryString = `INSERT INTO env_logs(env_data) VALUES(\'${post_body.data}\')`;
-      // console.log(queryString);
+      console.log("Verifying user:\n" + JSON.stringify(post_body));
+      var selectUserString = 'SELECT id, username, password_hash FROM users WHERE username = $1';
       const client = await pool.connect();
-      var result = await client.query(selectUserString);
+      var result = await client.query(selectUserString, [post_body.username]);
       // console.log(result);
       client.release();
       if (result.rowCount == 1) {
+        console.log(`User ${post_body.username} exists. Checking password.`)
         const hash = result.rows[0].password_hash;
         const ver = await bcryptjs.compare(post_body.passw, hash);
 
         if (ver) {
-          //TODO: fetch devices from database for user
           const newToken = jwt.sign({ id: result.rows[0].id }, jswSecret);
           res.cookie('token', newToken, { httpOnly: true });
+          console.log(`User ${post_body.username} verifyed. Issuing a new cookie and redirecting to /mydevices.`);
           res.redirect(`/mydevices`);
 
         } else {
@@ -174,48 +189,51 @@ app.post('/auth', async (req, res) => {
 
       } else {
         console.log("User doesn't exist");
-        res.send("User doesn't exist");
+        res.status(401).send("User doesn't exist");
       }
     } catch (err) {
       console.error(err);
       res.send("Error " + err);
     }
+  } else {
+    res.status(400).send("Wrong request body.");
+  }
 });
 
 app.post('/pair', async (req, res) => {
-  var post_body = req.body;
+  const post_body = req.body;
   //{ "type" : "pair", "token": 321456, "model": "model_name", "serial": "serial111"}
-  console.log("Pairing request: " + post_body);
-  if (post_body) {
+  console.log("Pairing request: " + JSON.stringify(post_body));
+  const pair_token = parseInt(post_body.token);
+  if (post_body && pair_token) {
     if (post_body.type == "pair") {
       try {
         //TODO Prepared statements
-        var selectUserString = `SELECT user_id, token FROM secret_tokens WHERE token = ${post_body.token}`;
-        console.log("Checking if token is correct for this user? :\n" + selectUserString)
+        var selectUserString = `SELECT user_id, token FROM secret_tokens WHERE token = $1`;
+        console.log("Checking if token is correct for this user:\n");
         const client = await pool.connect();
-        var resultToken = await client.query(selectUserString);
+        var resultToken = await client.query(selectUserString, [pair_token]);
         // console.log(resultToken);
         if (resultToken.rowCount == 1) {
           const user_id = resultToken.rows[0].user_id;
-          console.log("Token is correct. Checking if device is already paired.\n")
-          var selectDeviceString = `SELECT model, serial, token FROM device WHERE user_id = ${user_id} AND model = \'${post_body.model}\' AND serial = \'${post_body.serial}\'`;
+          console.log("Token is correct. Checking if device is already paired.")
+          var selectDeviceString = `SELECT model, serial, token FROM device WHERE user_id = ${user_id} AND model = $1 AND serial = $2`;
           console.log(selectDeviceString)
-          var resultDevice = await client.query(selectDeviceString);
+          var resultDevice = await client.query(selectDeviceString, [post_body.model, post_body.serial]);
           // console.log(resultDevice);
           if (resultDevice.rowCount == 0) {
-            var addDeviceString = `INSERT INTO device(model, serial, user_id) values (\'${post_body.model}\', \'${post_body.serial}\', ${user_id}) RETURNING id`;
-            var deleteTokenString = `DELETE FROM secret_tokens WHERE token = ${post_body.token}`;
+            var addDeviceString = `INSERT INTO device(model, serial, user_id) values ($1, $2, ${user_id}) RETURNING id`;
+            var deleteTokenString = `DELETE FROM secret_tokens WHERE token = ${pair_token}`;
             console.log("Device is not found. Deliting a token from db:\n" + deleteTokenString);
             await client.query(deleteTokenString);
-            console.log("Adding a device to db:\n" + addDeviceString);
-            resultDevice = await client.query(addDeviceString);
+            resultDevice = await client.query(addDeviceString, [post_body.model, post_body.serial]);
             const device_id = resultDevice.rows[0].id;
             console.log("Recieved new device_id: " + device_id);
             //TODO: Add unique hash to the token (otherwise device can change it's id)
             const newToken = jwt.sign({ device_id: device_id }, jswSecret);
             var updateTokenString = `UPDATE device SET token = \'${newToken}\' WHERE id = ${device_id}`;
             await client.query(updateTokenString);
-            console.log("Creating a new authorisation token for this device:" + updateTokenString);
+            console.log("Creating a new authorisation token for this device:\n" + updateTokenString);
             res.status(201).json({ token: newToken });
           } else {
             console.log("Already in DB");
@@ -235,15 +253,15 @@ app.post('/pair', async (req, res) => {
       res.send("Wrong \"type\" parameter in JSON.");
     }
   } else {
-    res.send("Empty POST body.");
+    res.status(400).send("Wrong POST body.");
   }
 });
 
 app.get('/delete', async (req, res) => {
-  var deviceDeleteString = `DELETE FROM device WHERE id = ${req.query.device_id}`;
+  var deviceDeleteString = `DELETE FROM device WHERE id = $1`;
   const client = await pool.connect();
   try {
-    await client.query(deviceDeleteString);
+    await client.query(deviceDeleteString, [req.query.device_id]);
     res.redirect('/mydevices');
   } catch (err) {
     console.error(err);
@@ -252,7 +270,7 @@ app.get('/delete', async (req, res) => {
 })
 
 app.get('/auth', async (req, res) => {
-  var post_body = req.body;
+  const post_body = req.body;
   const token = req.cookies.token;
   if (token) {
     jwt.verify(token, jswSecret, (err, verifiedJwt) => {
@@ -270,7 +288,6 @@ app.get('/auth', async (req, res) => {
 app.get('/mydevices', async (req, res) => {
   const id = jwt.decode(req.cookies.token).id;
   const addDevice = req.query.adddevice;
-  console.log(addDevice);
   console.log(id);
 
   const client = await pool.connect();
@@ -309,13 +326,13 @@ app.get('/viewlogs', async (req, res) => {
   const device_id = req.query.device_id;
 
   const client = await pool.connect();
-  var selectLogsString = `SELECT date_taken, tvoc, eco2, raw_h2, raw_ethanol FROM device_datalogs WHERE device_id = \'${device_id}\'`;
+  var selectLogsString = `SELECT date_taken, tvoc, eco2, raw_h2, raw_ethanol FROM device_datalogs WHERE device_id = $1`;
   // console.log(se);
 
-  var result = await client.query(selectLogsString);
+  var result = await client.query(selectLogsString, [device_id]);
   // console.log(result);
   client.release();
-  const results = { logs: result.rows};
+  const results = { logs: result.rows };
   res.render('pages/deviceLogs.ejs', results);
 });
 
