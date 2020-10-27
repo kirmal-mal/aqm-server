@@ -5,7 +5,7 @@
   <script>
     window.onload = function () {
 
-      var dataPoints = { tvoc: [], eoc2: [], raw_h2: [], raw_ethanol: [] }
+      var dataPoints = { tvoc: [], eco2: [], raw_h2: [], raw_ethanol: [] }
 
       var chart = new CanvasJS.Chart("chartContainer", {
         theme: "light2",
@@ -14,7 +14,7 @@
         },
         axisY: {
           minimum: 0,
-          maximum: 10000
+          maximum: 20000
         },
         data: [{
           type: "line",
@@ -22,7 +22,7 @@
         },
         {
           type: "line",
-          dataPoints: dataPoints.eoc2
+          dataPoints: dataPoints.eco2
         },
         {
           type: "line",
@@ -44,7 +44,7 @@
       function addData(data) {
         //dataPoints.shift();
         dataPoints.tvoc.push({ x: xValue, y: data.logs[0].tvoc });
-        dataPoints.eoc2.push({ x: xValue, y: data.logs[0].eoc2 });
+        dataPoints.eco2.push({ x: xValue, y: data.logs[0].eco2 });
         dataPoints.raw_h2.push({ x: xValue, y: data.logs[0].raw_h2 });
         dataPoints.raw_ethanol.push({ x: xValue, y: data.logs[0].raw_ethanol });
         console.log(dataPoints);
