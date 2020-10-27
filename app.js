@@ -47,6 +47,19 @@ app.get('/test_logs', async (req, res) => {
   }
 });
 
+app.get('/test_table', async (req, res) => {
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT * FROM env_logs');
+    const results = { 'results': (result) ? result.rows : null };
+    res.render('pages/test_table.ejs', results);
+    client.release();
+  } catch (err) {
+    console.error(err);
+    res.send("Error " + err);
+  }
+});
+
 app.post('/envdata', async (req, res) => {
   const post_body = req.body;
   if (post_body)
