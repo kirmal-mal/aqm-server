@@ -1,9 +1,4 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <% include ../partials/header.ejs %>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
 
 h2 {
   color: #3F3E3E;
@@ -212,33 +207,3 @@ h2 {
   text-align: center;
 
 }
-  </style>
-  </head>
-  <body>
-    <div class="signup-header">
-      <h1>Register</h1>
-      <h2>Air Sensor</h2>
-    </div>
-    <p style="text-align: center;">  Go to <a href="./test_logs">Logs</a>
-      Go to <a href="./test_table">Table</a> </p>
-
-    <form method="POST" action="/createUser">
-      <div class = "input-group"> <label>Username:</label> <input type="text" name="username" id="username" /></div>
-      <div class = "input-group"> <label>Email:</label> <input type="text" name="email" id="email" /></div>
-      <div class = "input-group"> <label>Password:</label> <input type="password" name="passw" id="passw" /></div>
-      <div class = "input-group"> <label>Confirm password:</label> <input type="password" name="confpassw" id="confpassw" /></div>
-      <div class = "reg-button"> <input type="submit" value="Create new account"></div> 
-  </form>
-  <div class="signup-header">
-    <h1>Login</h1>
-  </div> 
-  <form method="GET" action="/auth">
-    <div class = "reg-button"><input type="submit" value="My devices"></div>
-  </form>
-  <form method="POST" action="/auth">
-    <div class = "input-group"> <label>Username:</label> <input type="text" name="username" id="username" /></div>
-    <div class = "input-group"> <label>Password:</label> <input type="password" name="passw" id="passw" /></div>
-    <div class = "reg-button"><input type="submit" value="Login"></div>
-  </form>
-  </body>
-</html>

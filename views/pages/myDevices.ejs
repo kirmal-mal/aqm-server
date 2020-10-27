@@ -3,19 +3,231 @@
 
 <head>
   <% include ../partials/header.ejs %>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+
+h2 {
+  color: #3F3E3E;
+  margin: 10px auto;
+  font-weight: bold;
+  padding-top: 15px; 
+  width: 90%;
+}
+
+.data-table {
+    font-family: 'Roboto';
+    border-collapse: collapse;
+    margin-top: 50px;
+    width: 90%;
+    margin: 10px auto; 
+  }
+  
+  .data-table th {
+    font-family: 'Roboto';
+    font-weight: bold;
+    border: 1px solid #3F3E3E;
+    color: #3f48cc;
+    text-align: left;
+    padding: 15px;
+    font-size: 22px;
+  }
+  
+  .data-table td {
+    font-family: 'Roboto';
+    border: 1px solid #3F3E3E;
+    text-align: left;
+    padding: 15px;
+    font-size: 16px;
+  }
+  
+  tr:nth-child(even) {
+    background-color: #dddddd;
+  }
+
+  #table1 table {
+    font-family: 'Roboto';
+    margin: 0 auto;
+    width: 90%;
+  }
+
+  #table2 table {
+    font-family: 'Roboto';
+    margin: 0 auto;
+    width: 90%;
+  }
+
+  #table3 table {
+    font-family: 'Roboto';
+    margin: 0 auto;
+    width: 90%;
+  }
+
+  #table4 table {
+    font-family: 'Roboto';
+    margin: 0 auto;
+    width: 90%;
+  }
+
+  #table5 table {
+    font-family: 'Roboto';
+    margin: 0 auto;
+    width: 90%;
+  }
+
+  #table6 table {
+    font-family: 'Roboto';
+    margin: 0 auto;
+    width: 90%;
+  }
+
+  #table7 table {
+    font-family: 'Roboto';
+    margin: 0 auto;
+    width: 90%;
+  }
+
+  #table8 table {
+    font-family: 'Roboto';
+    margin: 0 auto;
+    width: 90%;
+  }
+
+  /* Current css for login and register php */
+
+  
+  .error {
+    width: 20%; 
+    margin: 10px auto; 
+    padding: 10px; 
+    border: 1px solid #a94442; 
+    color: #a94442; 
+    background: #f2dede; 
+    border-radius: 5px; 
+    text-align: left;
+  }
+  
+  .logout-content a{
+    font-size: 22px;
+  font-weight: bold;
+    text-decoration: none;
+    color: #3f48cc;
+  }
+
+.logout-content a{
+  font-size: 22px;
+  font-weight: bold;
+  color: #a94442;
+}
+
+.signup-header{
+  font-family: 'Lato', sans-serif;
+  width: 20%;
+  margin: 50px auto 0px;
+  color: white;
+  background: #3f48cc;
+  text-align: center;
+  border: 1px solid #3f48cc;
+  border-bottom: none;
+  border-radius: 10px 10px 0px 0px;
+  padding: 20px;
+}
+
+.input-group {
+  font-family: 'Lato', sans-serif;
+  margin: 20px auto 0px;
+  width: 20%;
+}
+
+.reg-button {
+  padding-top: 25px;
+  text-align: center;
+}
+
+
+.input-group label {
+  font-family: 'Lato', sans-serif;
+  text-align: center;
+}
+
+.input-group input {
+  font-family: 'Lato', sans-serif;
+  height: 30px;
+  width: 100%;
+  padding: 5px 5px;
+  font-size: 16px;
+  border-radius: 5px;
+  border: 1px solid black;
+}
+
+.member-text p {
+  font-family: 'Lato', sans-serif;
+  text-align: center;
+}
+
+ .btn {
+  font-family: 'Lato', sans-serif;
+  text-align: center;
+  padding: 10px;
+  font-size: 15px;
+  color: white;
+  background: #3f48cc;
+  border: none;
+  border-radius: 5px;
+}
+
+.contact_error {
+  width: 100%; 
+  margin: 10px auto; 
+  padding: 10px; 
+  border: 1px solid #a94442; 
+  color: #a94442; 
+  background: #f2dede; 
+  border-radius: 5px; 
+  text-align: left;
+}
+
+.error {
+  width: 20%; 
+  margin: 10px auto; 
+  padding: 10px; 
+  border: 1px solid #a94442; 
+  color: #a94442; 
+  background: #f2dede; 
+  border-radius: 5px; 
+  text-align: left;
+}
+.success  {
+  width: 100%; 
+  margin: 10px auto; 
+  padding-bottom: 10px; 
+  border: 1px solid #53a653; 
+  color: #53a653; 
+  background: #90EE90; 
+  border-radius: 5px; 
+  text-align: left;
+}
+
+.success h3 {
+  font-family: 'Lato', sans-serif;
+  color: #53a653;
+  text-align: center;
+
+}
+
+  </style>
 </head>
 
 <body>
   <form method="GET" action="/mydevices">
     <input type="hidden" id="addDevice" name="adddevice" value="true" />
-    <input type="submit" value="add Device" />
+    <div class = "reg-button"><input type="submit" value="Add Device" /></div>
   </form>
   <form method="POST" action="/logout">
-    <input type="submit" value="Log out" />
+    <div class = "reg-button"><input type="submit" value="Log out" /></div>
   </form>
-  <h3>New device token: <%= token %></h3>
-  <h2>Devices</h2>
-  <ul>
+  <h3 style="text-align: center;">New device token: <%= token %></h3>
+  <h2 style="text-align: center;">Devices</h2>
+  <ul style="text-align: center;">
     <% devices.forEach(function(r) { %>
     <li><%= r.id %> - <%= r.model %> - <%= r.serial %> - <%= r.date_connected %> - <a href='<%= "/delete?device_id=" + r.id %>' >X</a></a> - <a href='<%= "/viewlogs?device_id=" + r.id %>' >View logs</a></li>
     <% }); %>
