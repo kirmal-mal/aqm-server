@@ -57,7 +57,7 @@
       }
 
       function updateData() {
-        const urlParams = new URLSearchParams(windwo.location.search);
+        const urlParams = new URLSearchParams(window.location.search);
         const currentDeviceID = urlParams.get('device_id');
         $.getJSON(`https://sd-env-logs-server.herokuapp.com/getlogs?device_id=${currentDeviceID}`, addData);
       }
