@@ -31,6 +31,7 @@
     function addData(data) {
             //dataPoints.shift();
             dataPoints.push({x: xValue, y: data.logs[0].tvoc});
+            console.log(dataPoints);
             xValue++;
             yValue = data.logs[0].tvoc;
         
