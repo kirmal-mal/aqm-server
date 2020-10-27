@@ -33,7 +33,7 @@
             });
         } else {
             //dataPoints.shift();
-            dataPoints.push({x: 1, y: data.tvoc});
+            dataPoints.push({x: xValue, y: data.tvoc});
             xValue++;
             yValue = data.tvoc;
         }
@@ -44,7 +44,7 @@
     }
     
     function updateData() {
-        $.getJSON("https://sd-env-logs-server.herokuapp.com/getlogs?device_id=11", addData);
+        $.getJSON("https://sd-env-logs-server.herokuapp.com/getlogs?device_id=9", addData);
     }
     
     }
