@@ -99,7 +99,7 @@ app.post('/postlogs', async (req, res) => {
   const raw_h2 = parseInt(post_body.raw_h2);
   const raw_ethanol = parseInt(post_body.raw_ethanol);
   console.log(`Logs with tvoc: ${tvoc}, eco2: ${eco2}, raw_h2: ${raw_h2}, raw_ethanol: ${raw_ethanol}.`)
-  if (isNaN(tvoc) || isNaN(eco2) || isNaN(raw_h2) || isNaN(raw_ethanol) 
+  if (isNaN(tvoc) || isNaN(eco2) || isNaN(raw_h2) || isNaN(raw_ethanol)
     || min_int > tvoc || tvoc > max_int || min_int > eco2 || eco2 > max_int || min_int > raw_h2 || raw_h2 > max_int || min_int > raw_ethanol || raw_ethanol > max_int) {
     res.status(400).send("Wrong input")
   } else {
@@ -356,9 +356,14 @@ app.get('/viewlogs', async (req, res) => {
 
 app.get('/getlogs', async (req, res) => {
   const device_id = req.query.device_id;
-  console.log(JSON.stringify(req.query));
-  const results = await getLogs(device_id);
-  res.send(results);
+  if (device_id) {
+    console.log(JSON.stringify(req.query));
+    const results = await getLogs(device_id);
+    res.send(results);
+  } else {
+    res.send("Wrong query.")
+  }
+
 });
 
 app.post('/logout', async (req, res) => {
