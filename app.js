@@ -25,7 +25,7 @@ const jswSecret = "sdDev";
 
 async function getLogs(device_id) {
   const client = await pool.connect();
-  var selectLogsString = `SELECT date_taken, tvoc, eco2, raw_h2, raw_ethanol FROM device_datalogs WHERE device_id = $1`;
+  var selectLogsString = `SELECT date_taken, tvoc, eco2, raw_h2, raw_ethanol FROM device_datalogs WHERE device_id = $1  ORDER BY date_taken DESC`;
   // console.log(se);
 
   var result = await client.query(selectLogsString, [device_id]);
