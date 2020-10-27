@@ -363,7 +363,6 @@ app.get('/getlogs', async (req, res) => {
   } else {
     res.send("Wrong query.")
   }
-
 });
 
 app.post('/logout', async (req, res) => {
