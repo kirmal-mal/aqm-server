@@ -1,4 +1,5 @@
 const express = require('express')
+const { query, body, validationResult } = require('express-validator');
 const path = require('path')
 
 const bcryptjs = require('bcryptjs');
@@ -9,6 +10,7 @@ var otpGenerator = require('otp-generator')
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 
+const db = require('./dbactions');
 
 const PORT = process.env.PORT || 5000
 
@@ -23,22 +25,12 @@ const pool = new Pool({
 const jwt = require('jsonwebtoken');
 const jswSecret = "sdDev";
 
-async function getLogs(device_id) {
-  const client = await pool.connect();
-  var selectLogsString = `SELECT date_taken, tvoc, eco2, raw_h2, raw_ethanol FROM device_datalogs WHERE device_id = $1  ORDER BY date_taken DESC`;
-  // console.log(se);
 
-  var result = await client.query(selectLogsString, [device_id]);
-  // console.log(result);
-  client.release();
-  const results = { logs: result.rows };
-  // console.log(results);
-  return results;
-}
 
 const app = express();
 
 app.use(cookieParser())
+  .use(express.json())
   .use(bodyParser.json())
   .use(bodyParser.urlencoded({ extended: true }))
   .set('views', path.join(__dirname, 'views'))
@@ -142,84 +134,57 @@ app.post('/postlogs', async (req, res) => {
   }
 });
 
-app.post('/createUser', async (req, res) => {
-  const post_body = req.body;
-  if (post_body && ("username" in post_body) && ("email" in post_body) && ("passw" in post_body) && ("confpassw" in post_body) && post_body.username && post_body.email && post_body.passw && post_body.confpassw) {
-    if (post_body.passw === post_body.confpassw) {
-      try {
-        console.log("Trying to create new user:\n" + JSON.stringify(post_body));
-        var selectUserString = 'SELECT username, email FROM users WHERE username = $1 OR email = $2';
-        console.log(selectUserString)
-        // console.log(queryString);
-        const client = await pool.connect();
-        var result = await client.query(selectUserString, [post_body.username, post_body.email]);
-        // console.log(result);
-        if (result.rowCount > 0) {
-          console.log("User with this email or password already exists");
-          res.send("User with this email or password already exists");
-        } else {
-          const plain_passw = post_body.passw;
-          const pass_hash = await bcryptjs.hash(plain_passw, saltRounds);
-          console.log("Creating new user:");
-          var createUserString = `INSERT INTO users(username, password_hash, email) VALUES ($1, $2, $3);`;
-          console.log(createUserString);
-          result = await client.query(createUserString, [post_body.username, pass_hash, post_body.email]);
-          if (result.rowCount == 1) {
-            console.log(`User ${post_body.username} succesfully created.`);
-            res.send(`User ${post_body.username} succesfully created.`);
-          }
-        }
-        client.release();
-      } catch (err) {
-        console.error(err);
-        res.send("Error " + err);
-      }
-    } else {
-      console.log("Passwords doesn\'t match!");
-      res.send("Passwords doesn\'t match!");
+//Start of program routes
+app.post('/createUser', [
+  body('username').exists().isAlphanumeric(),
+  body('passw').exists().isAlphanumeric(),
+  body('confpassw', 'Password and confirmation should match').custom((value, { req }) => {
+    if (value !== req.body.passw) {
+      return false;
     }
-  } else {
-    res.status(400).send("Wrong request");
+    return true;
+  }),
+  body('email').exists().isEmail()
+], async (req, res) => {
+
+  //Check if there any validation errors
+  const errors = validationResult(req); // Finds the validation errors in this request and wraps them in an object with handy functions
+  if (!errors.isEmpty()) {
+    console.log(errors.array());
+    res.status(422).json({ errors: errors.array() });
+    return;
   }
+
+  //Try to create user
+  const result = await db.createUser(req.body.username, req.body.passw, req.body.email);
+
+  // console.log(ret);
+  //Return the result message
+  res.status(result.status).send(result.msg);
 });
 
-app.post('/auth', async (req, res) => {
-  const post_body = req.body;
-  if (post_body && post_body.username && post_body.passw) {
-    try {
-      //TODO Prepared statements
-      console.log("Verifying user:\n" + JSON.stringify(post_body));
-      var selectUserString = 'SELECT id, username, password_hash FROM users WHERE username = $1';
-      const client = await pool.connect();
-      var result = await client.query(selectUserString, [post_body.username]);
-      // console.log(result);
-      client.release();
-      if (result.rowCount == 1) {
-        console.log(`User ${post_body.username} exists. Checking password.`)
-        const hash = result.rows[0].password_hash;
-        const ver = await bcryptjs.compare(post_body.passw, hash);
+app.post('/auth', [
+  body('username').exists().isAlphanumeric(),
+  body('passw').exists().isAlphanumeric(),
+], async (req, res) => {
 
-        if (ver) {
-          const newToken = jwt.sign({ id: result.rows[0].id }, jswSecret);
-          res.cookie('token', newToken, { httpOnly: true });
-          console.log(`User ${post_body.username} verifyed. Issuing a new cookie and redirecting to /mydevices.`);
-          res.redirect(`/mydevices`);
+  const errors = validationResult(req); // Finds the validation errors in this request and wraps them in an object with handy functions
+  if (!errors.isEmpty()) {
+    console.log(errors.array());
+    res.status(422).json({ errors: errors.array() });
+    return;
+  }
 
-        } else {
-          console.log("Wrond password");
-          res.status(401).send("Wrond password");
-        }
-
-      } else {
-        console.log("User doesn't exist");
-        res.status(401).send("User doesn't exist");
-      }
-    } catch (err) {
-      console.error(err);
-      res.send("Error " + err);
-    }
+  //Try to verify user
+  const result = await db.verifyUser(req.body.username, req.body.passw);
+  console.log(result);
+  //Issue new token into cookie if succesful
+  if (result.ret) {
+    res.cookie('token', result.cookie, { httpOnly: true });
+    console.log(`User ${req.body.username} verified. Issuing a new cookie and redirecting to /mydevices.`);
+    res.redirect(`/mydevices`);
   } else {
-    res.status(400).send("Wrong request body.");
+    res.status(result.status).send(result.msg);
   }
 });
 
@@ -277,6 +242,35 @@ app.post('/pair', async (req, res) => {
     }
   } else {
     res.status(400).send("Wrong POST body.");
+  }
+});
+
+app.post('/addcoords', [
+  body('device_id').exists().isInt(),
+  body('latlon').isString().trim().exists().isLatLong()
+], async (req, res) => {
+
+  //Check if there any validation errors
+  const errors = validationResult(req); // Finds the validation errors in this request and wraps them in an object with handy functions
+  if (!errors.isEmpty()) {
+    console.log(errors.array());
+    res.status(422).json({ errors: errors.array() });
+    return;
+  }
+
+  const latlon = req.body.latlon.split(',');
+  const device_id = req.body.device_id;
+  console.log("Changing coordinates of the device: " + JSON.stringify(req.body));
+
+  //Try to create user
+  if (latlon.length == 2) {
+    console.log(`Updating coordinates for device_id : ${device_id} with coordinates: ${latlon[0]},${latlon[1]}.`);
+    const result = await db.changeCoordinates(device_id, latlon[0], latlon[1]);
+
+    //Return the result message
+    res.status(result.status).send(result.msg);
+  } else {
+    res.status(500).send('Cannot change coordinates');
   }
 });
 
@@ -347,21 +341,47 @@ app.get('/mydevices', async (req, res) => {
 
 app.get('/viewlogs', async (req, res) => {
   const device_id = req.query.device_id;
-  const results = await getLogs(device_id);
-  console.log(results);
+  const results = await db.getLogs(device_id, 0);
+  console.log("View device logs: " + JSON.stringify(results));
   res.render('pages/deviceLogs.ejs', results);
 });
 
-app.get('/getlogs', async (req, res) => {
-  const device_id = req.query.device_id;
-  if (device_id) {
-    console.log(JSON.stringify(req.query));
-    const results = await getLogs(device_id);
-    res.send(results);
-  } else {
-    res.send("Wrong query.")
+app.get('/getlogs', [
+  query('device_id').exists().isInt(),
+  query('n').optional().isInt()
+], async (req, res) => {
+  const errors = validationResult(req); // Finds the validation errors in this request and wraps them in an object with handy functions
+  if (!errors.isEmpty()) {
+    console.log(errors.array());
+    res.status(422).json({ errors: errors.array() });
+    return;
   }
+
+  const device_id = req.query.device_id;
+  const n = req.query.n ? req.query.n : 1;
+
+  console.log("Request to get logs:" + JSON.stringify(req.query));
+  const results = await db.getLogs(device_id, n);
+  res.send(results);
 });
+
+app.get('/getcoords', [
+  query('device_id').exists().isInt(),
+], async (req, res) => {
+  const errors = validationResult(req); // Finds the validation errors in this request and wraps them in an object with handy functions
+  if (!errors.isEmpty()) {
+    console.log(errors.array());
+    res.status(422).json({ errors: errors.array() });
+    return;
+  }
+
+  const device_id = req.query.device_id;
+
+  console.log("Request to get device coords:" + JSON.stringify(req.query));
+  const results = await db.getCoords(device_id);
+  res.send(results);
+});
+
 
 app.post('/logout', async (req, res) => {
   res.clearCookie('token');
