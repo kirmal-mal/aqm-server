@@ -348,7 +348,7 @@ app.get('/mydevices', async (req, res) => {
 app.get('/viewlogs', async (req, res) => {
   const device_id = req.query.device_id;
   const results = await getLogs(device_id);
-  console.log(results);
+  // console.log(results);
   res.render('pages/deviceLogs.ejs', results);
 });
 

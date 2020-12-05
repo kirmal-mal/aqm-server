@@ -214,24 +214,100 @@ h2 {
 
 }
 
+#deviceMap { 
+  height: 180px; 
+  }
   </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+  integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+  crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+   integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+   crossorigin=""></script>
 </head>
 
 <body>
-  <form method="GET" action="/mydevices">
-    <input type="hidden" id="addDevice" name="adddevice" value="true" />
-    <div class = "reg-button"><input type="submit" value="Add Device" /></div>
-  </form>
-  <form method="POST" action="/logout">
-    <div class = "reg-button"><input type="submit" value="Log out" /></div>
-  </form>
+  <div id="Controls">
+    <form method="GET" action="/mydevices">
+      <input type="hidden" id="addDevice" name="adddevice" value="true" />
+      <div class = "reg-button"><input type="submit" value="Add Device" /></div>
+    </form>
+    <form method="POST" action="/logout">
+      <div class = "reg-button"><input type="submit" value="Log out" /></div>
+    </form>
+  </div>
   <h3 style="text-align: center;">New device token: <%= token %></h3>
+  <div id="deviceMap">
+
+  </div>
+  <button type="button" id='save'>Save coordinates</button>
+  <script>
+    const inZoom = 13;
+    var inLat = 43.618881;
+    var inLon = -116.215019;
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(position => {
+        inLat = position.coords.latitude;
+        inLon = position.coords.longitude;
+      })
+    }
+    var map = L.map('deviceMap').setView([inLat, inLon], inZoom);
+    const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+    const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    const tiles = L.tileLayer(tileUrl, { attribution });
+    tiles.addTo(map);
+    var markers = new Array();
+    // const marker = L.marker([inLat, inLon]).addTo(map);
+  </script>
   <h2 style="text-align: center;">Devices</h2>
   <ul style="text-align: center;">
     <% devices.forEach(function(r) { %>
-    <li><%= r.id %> - <%= r.model %> - <%= r.serial %> - <%= r.date_connected %> - <a href='<%= "/delete?device_id=" + r.id %>' >X</a></a> - <a href='<%= "/viewlogs?device_id=" + r.id %>' >View logs</a></li>
+      <li><input type="checkbox" id="chbox<%-r.id%>" name="chbox<%-r.id%>"><%= r.id %> - <%= r.model %> - <%= r.serial %> - <%= r.date_connected %> - <a href='<%= "/delete?device_id=" + r.id %>' >X</a></a> - <a href='<%= "/viewlogs?device_id=" + r.id %>' >View logs</a></li>
+      <script>
+        document.getElementById("chbox<%-r.id%>").addEventListener('change', function() {
+            if (this.checked) {
+              this.disabled = true;
+              var marker<%-r.id%> = L.marker(map.getCenter(), {draggable : true}).addTo(map);
+              marker<%-r.id%>.id = <%-r.id%>;
+              marker<%-r.id%>.bindPopup("<%= r.model %> _ <%= r.id %><br>" + marker<%-r.id%>.getLatLng());
+              marker<%-r.id%>.on('dragend', function(event){
+                var mrk = event.target;
+                var position = mrk.getLatLng();
+                mrk.bindPopup("<%= r.model %> _ <%= r.id %><br>" + marker<%-r.id%>.getLatLng()).update().openPopup();
+              });
+              markers.push(marker<%-r.id%>);
+            }
+          });
+      </script>
+      <% if (r.lat && r.lon) {%>
+        <script>
+          document.getElementById("chbox<%-r.id%>").checked = true;
+          document.getElementById("chbox<%-r.id%>").disabled = true;
+          var marker<%-r.id%> = L.marker([<%=r.lat%>, <%=r.lon%>], {draggable : true}).addTo(map);
+          marker<%-r.id%>.id = <%-r.id%>;
+          marker<%-r.id%>.bindPopup("<%= r.model %> _ <%= r.id %><br>" + marker<%-r.id%>.getLatLng());
+          marker<%-r.id%>.on('dragend', function(event){
+            var mrk = event.target;
+            var position = mrk.getLatLng();
+            mrk.bindPopup("<%= r.model %> _ <%= r.id %><br>" + marker<%-r.id%>.getLatLng()).update().openPopup();
+          });
+          markers.push(marker<%-r.id%>);
+        </script>
+      <% } %>
     <% }); %>
   </ul>
+  <script>
+    var group = new L.featureGroup(markers);
+    map.fitBounds(group.getBounds().pad(0.5));
+    document.getElementById("save").onclick = function() {
+      markers.forEach(function(el) {
+        var xmlhttp = new XMLHttpRequest();   // new HttpRequest instance 
+        xmlhttp.open("POST", "/addcoords");
+        xmlhttp.setRequestHeader("Content-Type", "application/json");
+        xmlhttp.send(JSON.stringify({device_id:el.id, latlon:el.getLatLng().lat + ", " + el.getLatLng().lng}));
+      })
+    }
+  </script>
 </body>
 
 </html>

@@ -332,7 +332,7 @@ app.get('/mydevices', async (req, res) => {
     client.release();
     tokenString = `${devToken}`;
   }
-  var selectDevicesString = `SELECT id, model, serial, date_connected FROM device WHERE user_id = ${id}`;
+  var selectDevicesString = `SELECT id, model, serial, date_connected, lat, lon FROM device WHERE user_id = ${id}`;
   result = await client.query(selectDevicesString);
   // console.log(result);
   const results = { devices: result.rows, token: tokenString };
@@ -342,7 +342,7 @@ app.get('/mydevices', async (req, res) => {
 app.get('/viewlogs', async (req, res) => {
   const device_id = req.query.device_id;
   const results = await db.getLogs(device_id, 0);
-  console.log("View device logs: " + JSON.stringify(results));
+  // console.log("View device logs: " + JSON.stringify(results));
   res.render('pages/deviceLogs.ejs', results);
 });
 
