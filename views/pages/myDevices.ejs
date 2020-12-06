@@ -307,7 +307,7 @@ h2 {
       markers.forEach(function(el) {
         alert("here")
         var xmlhttp = new XMLHttpRequest();   // new HttpRequest instance 
-        xmlhttp.open("POST", "https://sd-env-logs-server.herokuapp.com/addcoords");
+        xmlhttp.open("POST", "/addcoords");
         xmlhttp.setRequestHeader("Content-Type", "application/json");
         xmlhttp.send(JSON.stringify({device_id:el.id, latlon:el.getLatLng().lat + ", " + el.getLatLng().lng}));
         document.getElementById("isSaved").innerHTML = "Device coordinates saved"
