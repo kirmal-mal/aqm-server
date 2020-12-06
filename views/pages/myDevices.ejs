@@ -298,8 +298,8 @@ h2 {
     <% }); %>
   </ul>
   <script>
+    var group = new L.featureGroup(markers);
     if (group) {
-      var group = new L.featureGroup(markers);
       map.fitBounds(group.getBounds().pad(0.5));
     }
     document.addEventListener('DOMContentLoaded', function() {
