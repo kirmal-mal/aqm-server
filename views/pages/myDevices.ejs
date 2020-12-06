@@ -241,6 +241,7 @@ h2 {
 
   </div>
   <button type="button" id='save'>Save coordinates</button>
+  <div id="isSaved"></div>
   <script>
     const inZoom = 13;
     var inLat = 43.618881;
@@ -297,16 +298,22 @@ h2 {
     <% }); %>
   </ul>
   <script>
-    var group = new L.featureGroup(markers);
-    map.fitBounds(group.getBounds().pad(0.5));
-    document.getElementById("save").onclick = function() {
+    if (group) {
+      var group = new L.featureGroup(markers);
+      map.fitBounds(group.getBounds().pad(0.5));
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById("isSaved").onclick = function() {
       markers.forEach(function(el) {
         var xmlhttp = new XMLHttpRequest();   // new HttpRequest instance 
         xmlhttp.open("POST", "/addcoords");
         xmlhttp.setRequestHeader("Content-Type", "application/json");
         xmlhttp.send(JSON.stringify({device_id:el.id, latlon:el.getLatLng().lat + ", " + el.getLatLng().lng}));
+        document.getElementById("save").innerHTML = "Device coordinates saved"
       })
     }
+    });
+    
   </script>
 </body>
 
