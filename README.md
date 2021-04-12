@@ -1,6 +1,6 @@
 # aqm-server
 
-### Application Server
+### AQM Server
 Application server is a Node.js server that accepts information from the devices and provides simple user interface to add a new device or view data recieved from the device.
 
 The server has following functions:
